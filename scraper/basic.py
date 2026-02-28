@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+import time
 
 import requests
 from scrapling.fetchers import Fetcher
@@ -39,34 +40,38 @@ def scrape_products(url: str = BASE_URL) -> list[dict]:
     return []
 
 
+def _parse_v1_card(card) -> dict:
+    """v1構造のカード1枚をパースする"""
+    return {
+        "name": _safe_text(card.css("h2.product-name").first),
+        "price": _parse_price(_safe_text(card.css("span.product-price").first)),
+        "category": _safe_text(card.css("span.product-category").first),
+        "rating": _parse_rating(_safe_text(card.css("div.product-rating").first)),
+        "reviews": _parse_reviews(_safe_text(card.css("div.product-reviews").first)),
+        "description": _safe_text(card.css("p.product-desc").first),
+    }
+
+
+def _parse_v2_card(card) -> dict:
+    """v2構造のカード1枚をパースする"""
+    return {
+        "name": _safe_text(card.css("h3.title").first),
+        "price": _parse_price(_safe_text(card.css("div.cost").first)),
+        "category": _safe_text(card.css("span.tag").first),
+        "rating": _parse_rating(_safe_text(card.css("div.stars").first)),
+        "reviews": _parse_reviews(_safe_text(card.css("span.review-count").first)),
+        "description": _safe_text(card.css("p.desc").first),
+    }
+
+
 def _parse_v1(cards) -> list[dict]:
     """v1構造のカードをパースする"""
-    products = []
-    for card in cards:
-        products.append({
-            "name": _safe_text(card.css("h2.product-name").first),
-            "price": _parse_price(_safe_text(card.css("span.product-price").first)),
-            "category": _safe_text(card.css("span.product-category").first),
-            "rating": _parse_rating(_safe_text(card.css("div.product-rating").first)),
-            "reviews": _parse_reviews(_safe_text(card.css("div.product-reviews").first)),
-            "description": _safe_text(card.css("p.product-desc").first),
-        })
-    return products
+    return [_parse_v1_card(card) for card in cards]
 
 
 def _parse_v2(cards) -> list[dict]:
     """v2構造のカードをパースする"""
-    products = []
-    for card in cards:
-        products.append({
-            "name": _safe_text(card.css("h3.title").first),
-            "price": _parse_price(_safe_text(card.css("div.cost").first)),
-            "category": _safe_text(card.css("span.tag").first),
-            "rating": _parse_rating(_safe_text(card.css("div.stars").first)),
-            "reviews": _parse_reviews(_safe_text(card.css("span.review-count").first)),
-            "description": _safe_text(card.css("p.desc").first),
-        })
-    return products
+    return [_parse_v2_card(card) for card in cards]
 
 
 def _safe_text(element) -> str:
@@ -108,7 +113,8 @@ def save_results(products: list[dict], filepath: str) -> None:
         json.dump(products, f, ensure_ascii=False, indent=2)
 
 
-def main():
+def _main_default():
+    """従来の一括実行モード"""
     try:
         version = get_version()
     except requests.ConnectionError:
@@ -127,6 +133,63 @@ def main():
 
     for p in products:
         print(f"  - {p['name']}: ¥{p['price']:,}")
+
+
+def _main_realtime():
+    """リアルタイム出力モード（ダッシュボード連携用）"""
+    total_steps = 4
+
+    print("[STEP] 1/4 サーバー接続確認中...", flush=True)
+    try:
+        version = get_version()
+    except requests.ConnectionError:
+        print("[ERROR] Flaskサーバーが起動していません", flush=True)
+        sys.exit(1)
+    print(f"[INFO] サイトバージョン: {version}", flush=True)
+    print(f"[PROGRESS] 1/{total_steps}", flush=True)
+
+    print(f"[STEP] 2/4 HTML取得中... {BASE_URL}", flush=True)
+    page = Fetcher.get(BASE_URL)
+    print(f"[PROGRESS] 2/{total_steps}", flush=True)
+
+    # v1/v2判定
+    cards = page.css(".product-card")
+    if cards:
+        parse_card = _parse_v1_card
+        print("[INFO] v1構造を検出", flush=True)
+    else:
+        cards = page.css(".item-tile")
+        parse_card = _parse_v2_card
+        print("[INFO] v2構造を検出", flush=True)
+
+    if not cards:
+        print("[WARN] 商品カードが見つかりません", flush=True)
+        sys.exit(1)
+
+    print(f"[STEP] 3/4 商品データ解析中... ({len(cards)}件)", flush=True)
+    products = []
+    for i, card in enumerate(cards, 1):
+        product = parse_card(card)
+        products.append(product)
+        print(f"[PRODUCT] {json.dumps(product, ensure_ascii=False)}", flush=True)
+        time.sleep(0.3)
+
+    print(f"[PROGRESS] 3/{total_steps}", flush=True)
+
+    print("[STEP] 4/4 データ保存中...", flush=True)
+    filepath = os.path.join(DATA_DIR, f"products_{version}.json")
+    save_results(products, filepath)
+    print(f"[INFO] 保存先: {filepath}", flush=True)
+    print(f"[PROGRESS] 4/{total_steps}", flush=True)
+
+    print(f"[DONE] {len(products)}件取得完了", flush=True)
+
+
+def main():
+    if "--realtime" in sys.argv:
+        _main_realtime()
+    else:
+        _main_default()
 
 
 if __name__ == "__main__":
