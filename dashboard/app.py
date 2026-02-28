@@ -259,12 +259,68 @@ elif page == "⚡ スクレイピング実行":
 
     url = st.text_input("対象URL", value="http://localhost:5001")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         basic_clicked = st.button("🕷️ 基本スクレイピング", use_container_width=True)
     with col2:
         adaptive_clicked = st.button("🔄 Adaptive フルデモ", use_container_width=True)
+    with col3:
+        visual_clicked = st.button("👁️ ビジュアル実行", use_container_width=True)
+
+    if visual_clicked:
+        st.info("🖥️ ブラウザウィンドウが開きます。スクレイピングの様子を観察してください。")
+        progress_bar = st.progress(0, text="ブラウザ起動中...")
+        status = st.status("👁️ ビジュアルスクレイピング実行中...", expanded=True)
+        table_container = st.empty()
+
+        env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "scraper.visual", "--realtime"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, cwd=PROJECT_ROOT, env=env,
+        )
+
+        products = []
+        done = False
+
+        for line in iter(proc.stdout.readline, ""):
+            line = line.rstrip()
+            if not line:
+                continue
+
+            if line.startswith("[STEP]"):
+                status.write(f"⏳ {line.replace('[STEP] ', '')}")
+            elif line.startswith("[INFO]"):
+                status.write(f"ℹ️ {line.replace('[INFO] ', '')}")
+            elif line.startswith("[PRODUCT]"):
+                product = json.loads(line.replace("[PRODUCT] ", ""))
+                products.append(product)
+                table_container.dataframe(
+                    pd.DataFrame(products), use_container_width=True,
+                )
+            elif line.startswith("[PROGRESS]"):
+                parts = line.replace("[PROGRESS] ", "").split("/")
+                current, total = int(parts[0]), int(parts[1])
+                if total > 0:
+                    progress_bar.progress(current / total, text=f"進捗: {current}/{total}")
+            elif line.startswith("[DONE]"):
+                progress_bar.progress(1.0, text="完了!")
+                status.update(label=f"✅ {line.replace('[DONE] ', '')}", state="complete")
+                done = True
+            elif line.startswith("[WARN]"):
+                status.write(f"⚠️ {line.replace('[WARN] ', '')}")
+            elif line.startswith("[ERROR]"):
+                status.update(label=f"❌ {line.replace('[ERROR] ', '')}", state="error")
+
+        proc.wait()
+
+        if proc.returncode != 0 and not done:
+            error_output = proc.stderr.read()
+            if error_output:
+                status.update(label="❌ 実行エラー", state="error")
+                st.error("ビジュアルスクレイパーでエラーが発生しました")
+                st.code(error_output)
 
     if basic_clicked or adaptive_clicked:
         if basic_clicked:
