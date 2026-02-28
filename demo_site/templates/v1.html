@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechShop - v1</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: #fff; padding: 24px 40px; border-bottom: 2px solid #e0e0e0; text-align: center; }
+        .header h1 { font-size: 28px; color: #2c3e50; }
+        .header p { color: #7f8c8d; margin-top: 4px; }
+        .product-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 32px 40px; max-width: 1200px; margin: 0 auto; }
+        .product-card {
+            background: #fff; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s;
+        }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .product-category { display: inline-block; background: #e8f4fd; color: #2980b9; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 12px; }
+        .product-name { font-size: 18px; margin-bottom: 8px; color: #2c3e50; }
+        .product-price { font-size: 24px; font-weight: bold; color: #e74c3c; }
+        .product-rating { margin-top: 8px; color: #f39c12; font-size: 14px; }
+        .product-reviews { color: #95a5a6; font-size: 12px; margin-top: 4px; }
+        .product-desc { color: #7f8c8d; font-size: 13px; margin-top: 12px; line-height: 1.5; }
+        .footer { display: flex; justify-content: space-between; align-items: center; padding: 16px 40px; background: #fff; border-top: 1px solid #e0e0e0; margin-top: 32px; }
+        .switch-btn { background: #3498db; color: #fff; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; }
+        .switch-btn:hover { background: #2980b9; }
+        .version-badge { background: #ecf0f1; color: #7f8c8d; padding: 6px 16px; border-radius: 20px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TechShop</h1>
+        <p>最新ガジェットをお手頃価格で</p>
+    </div>
+
+    <div class="product-list">
+        {% for product in products %}
+        <div class="product-card" data-id="{{ product.id }}">
+            <span class="product-category">{{ product.category }}</span>
+            <h2 class="product-name">{{ product.name }}</h2>
+            <span class="product-price">&yen;{{ "{:,}".format(product.price) }}</span>
+            <div class="product-rating">&starf; {{ product.rating }}</div>
+            <div class="product-reviews">{{ product.reviews }}件のレビュー</div>
+            <p class="product-desc">{{ product.description }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer">
+        <a href="/switch" class="switch-btn">UI バージョン切替</a>
+        <span class="version-badge">v1 - Original</span>
+    </div>
+</body>
+</html>
