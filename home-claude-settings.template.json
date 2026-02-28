@@ -1,0 +1,46 @@
+{
+  "env": {
+    "NODE_ENV": "development",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "70",
+    "MAX_MCP_OUTPUT_TOKENS": "25000"
+  },
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <claude@anthropic.com>",
+    "pr": "Generated with Claude Code"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [
+      "Bash(curl -o:*)",
+      "Bash(wget:*)",
+      "Bash(rm -rf /*)",
+      "Bash(eval:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(~/.aws/**)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(docker:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "outputStyle": "Explanatory",
+  "language": "japanese",
+  "autoUpdatesChannel": "stable",
+  "showTurnDuration": true
+}

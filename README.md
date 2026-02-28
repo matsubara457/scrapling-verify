@@ -6,15 +6,37 @@ Claude Code の品質パイプライン・Skills・Agents を新プロジェク�
 
 ```
 claude-code-templates/
-├── README.md                    # このファイル
-├── CLAUDE.template.md           # CLAUDE.md テンプレート（要カスタマイズ）
-├── .claude/
-│   ├── settings.json            # プロジェクト設定（hooks含む）
-│   ├── settings.local.json      # ローカル権限設定
-│   ├── agents/                  # サブエージェント設定（18体）
-│   └── skills/                  # Claude Code Skills（52個）
-└── memory/
-    └── MEMORY.template.md       # auto-memory 初期テンプレート
+├── README.md                           # このファイル
+├── CLAUDE.template.md                  # CLAUDE.md テンプレート（要カスタマイズ）
+│
+├── .claude/                            # Claude Code 設定
+│   ├── settings.json                   # プロジェクト設定（hooks含む）
+│   ├── settings.local.json             # ローカル権限設定
+│   ├── agents/                         # サブエージェント設定（18体）
+│   └── skills/                         # Claude Code Skills（52個）
+│
+├── memory/                             # auto-memory テンプレート
+│   ├── MEMORY.template.md              # MEMORY.md 初期テンプレート
+│   └── skill-patterns.md               # Skills自動進化の永続記憶テンプレート
+│
+├── docs/                               # ドキュメントテンプレート
+│   ├── spec.template.md                # 仕様書スケルトン
+│   ├── basic-design.template.md        # 基本設計書スケルトン
+│   ├── detailed-design.template.md     # 詳細設計書スケルトン
+│   └── er-diagram.template.mermaid     # ER図テンプレート
+│
+├── home-claude-settings.template.json  # ~/.claude/settings.json テンプレート
+│
+├── .prettierrc                         # Prettier 設定
+├── eslint.config.js                    # ESLint Flat Config
+├── tsconfig.base.json                  # TypeScript ベース設定
+├── vitest.config.ts                    # Vitest テスト設定
+├── drizzle.config.ts                   # Drizzle ORM 設定
+├── docker-compose.yml                  # ローカル開発用 PostgreSQL
+├── pnpm-workspace.yaml                 # pnpm ワークスペース定義
+├── package.template.json               # ルート package.json テンプレート
+├── .env.example                        # 環境変数テンプレート
+└── .gitignore                          # Git 無視設定
 ```
 
 ## セットアップ手順
@@ -23,11 +45,40 @@ claude-code-templates/
 
 ```bash
 # プロジェクトルートで実行
-cp -r ~/claude-code-templates/.claude ./.claude
-cp ~/claude-code-templates/CLAUDE.template.md ./CLAUDE.md
+PROJECT_ROOT=$(pwd)
+
+# Claude Code 設定（Skills + Agents + hooks）
+cp -r ~/claude-code-templates/.claude "$PROJECT_ROOT/.claude"
+
+# CLAUDE.md
+cp ~/claude-code-templates/CLAUDE.template.md "$PROJECT_ROOT/CLAUDE.md"
+
+# 設定ファイル群
+cp ~/claude-code-templates/.prettierrc "$PROJECT_ROOT/"
+cp ~/claude-code-templates/eslint.config.js "$PROJECT_ROOT/"
+cp ~/claude-code-templates/tsconfig.base.json "$PROJECT_ROOT/"
+cp ~/claude-code-templates/vitest.config.ts "$PROJECT_ROOT/"
+cp ~/claude-code-templates/drizzle.config.ts "$PROJECT_ROOT/"
+cp ~/claude-code-templates/docker-compose.yml "$PROJECT_ROOT/"
+cp ~/claude-code-templates/pnpm-workspace.yaml "$PROJECT_ROOT/"
+cp ~/claude-code-templates/package.template.json "$PROJECT_ROOT/package.json"
+cp ~/claude-code-templates/.env.example "$PROJECT_ROOT/"
+cp ~/claude-code-templates/.gitignore "$PROJECT_ROOT/"
+
+# ドキュメントテンプレート
+mkdir -p "$PROJECT_ROOT/docs"
+cp ~/claude-code-templates/docs/*.template.md "$PROJECT_ROOT/docs/"
+cp ~/claude-code-templates/docs/*.template.mermaid "$PROJECT_ROOT/docs/"
 ```
 
-### 2. CLAUDE.md をカスタマイズ
+### 2. グローバル Claude Code 設定（初回のみ）
+
+```bash
+# ~/.claude/settings.json がなければコピー
+cp ~/claude-code-templates/home-claude-settings.template.json ~/.claude/settings.json
+```
+
+### 3. CLAUDE.md をカスタマイズ
 
 `CLAUDE.md` を開き、`{{PLACEHOLDER}}` マーカーをプロジェクト固有の値に置換:
 
@@ -37,13 +88,20 @@ cp ~/claude-code-templates/CLAUDE.template.md ./CLAUDE.md
 | `{{PROJECT_DESCRIPTION}}` | 概要（1-3行） | 社内向け在庫管理Webアプリ |
 | `{{TECH_STACK}}` | 技術スタックセクション | 下記参照 |
 | `{{ARCHITECTURE}}` | アーキテクチャ説明 | monorepo: apps/ + packages/ |
-| `{{CODE_CONVENTIONS}}` | コード規約 | インデント: 2スペース, etc. |
-| `{{IMPLEMENTATION_PATTERNS}}` | 実装パターン | Route → Service → Repository |
 | `{{COMMANDS}}` | ビルド/テストコマンド | pnpm dev, pnpm test, etc. |
 | `{{SPEC_DOCS}}` | 仕様書パス | docs/spec.md |
 | `{{WORKTREE_BASE_PATH}}` | worktreeの作成先 | /Users/name/Desktop/ |
 
-### 3. Skills をプロジェクトに合わせて調整
+### 4. その他テンプレートファイルの置換
+
+| ファイル | プレースホルダー | 説明 |
+|---|---|---|
+| `docker-compose.yml` | `{{PROJECT_NAME}}`, `{{DB_NAME}}`, `{{DB_USER}}` | DB接続情報 |
+| `package.json` | `{{PROJECT_NAME}}`, `{{ORG}}` | パッケージ名・org名 |
+| `.env.example` | `{{DB_USER}}`, `{{DB_NAME}}` | DB接続情報 |
+| `docs/*.template.md` | `{{PROJECT_NAME}}` | ドキュメントヘッダー |
+
+### 5. Skills をプロジェクトに合わせて調整
 
 ほとんどの Skills はそのまま動作しますが、以下のファイルパスパターンは
 プロジェクト構成に合わせて修正してください:
@@ -51,9 +109,9 @@ cp ~/claude-code-templates/CLAUDE.template.md ./CLAUDE.md
 - `backend/src/` → バックエンドのソースディレクトリ
 - `frontend/src/` → フロントエンドのソースディレクトリ
 - `shared/` → 共有パッケージのディレクトリ
-- `docs/spec.md` → 仕様書のパス
+- `docs/spec-v5.md` → 仕様書のパス（`docs/spec.md` 等に変更）
 
-### 4. 不要な Skills を削除
+### 6. 不要な Skills を削除
 
 プロジェクトの技術スタックに合わない Skills は削除:
 
@@ -65,12 +123,14 @@ cp ~/claude-code-templates/CLAUDE.template.md ./CLAUDE.md
 | Codex | codex-reply, review-triage | Codexレビューを使わない場合 |
 | monorepo (shared/) | export-sync, type-sync | 単一パッケージの場合 |
 
-### 5. auto-memory を初期化（任意）
+### 7. auto-memory を初期化（任意）
 
 ```bash
 # Claude Code の auto-memory ディレクトリにコピー
-cp ~/claude-code-templates/memory/MEMORY.template.md \
-   ~/.claude/projects/<project-hash>/memory/MEMORY.md
+MEMORY_DIR=~/.claude/projects/<project-hash>/memory
+mkdir -p "$MEMORY_DIR"
+cp ~/claude-code-templates/memory/MEMORY.template.md "$MEMORY_DIR/MEMORY.md"
+cp ~/claude-code-templates/memory/skill-patterns.md "$MEMORY_DIR/skill-patterns.md"
 ```
 
 ## Skills 一覧（52個）
@@ -212,4 +272,10 @@ find .claude/skills -name "SKILL.md" -exec sed -i '' 's/pnpm/npm/g' {} +
 テンプレートは日本語前提です。英語に変更する場合:
 - CLAUDE.md の言語設定を変更
 - Skills 内の日本語テスト名規約を英語に変更
-- settings.json の `language` を `english` に変更
+- home-claude-settings.template.json の `language` を `english` に変更
+
+### 仕様書パスの変更
+Skills 内で `docs/spec-v5.md` を参照している箇所を一括置換:
+```bash
+find .claude/skills -name "SKILL.md" -exec sed -i '' 's|docs/spec-v5.md|docs/spec.md|g' {} +
+```
