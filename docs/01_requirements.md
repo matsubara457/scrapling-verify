@@ -45,6 +45,7 @@
 | F-SCRAPE-002 | Adaptive保存 | `auto_save=True` で要素の指紋をローカルに保存 |
 | F-SCRAPE-003 | Adaptive復元 | `adaptive=True` でv2構造から要素を自動復元 |
 | F-SCRAPE-004 | 結果ファイル保存 | スクレイピング結果をJSON/CSVで `data/` に保存 |
+| F-SCRAPE-007 | ビジュアルスクレイピング | Playwright でブラウザ表示しながらスクレイピング過程を可視化 |
 | F-DASH-001 | 商品一覧テーブル | スクレイピング結果を表形式で表示 |
 | F-DASH-002 | 価格グラフ | 商品価格の棒グラフ・カテゴリ別集計 |
 | F-DASH-003 | CSV DL（ダッシュボード側） | 表示データをCSVでダウンロード |
@@ -56,7 +57,8 @@
 | F-SCRAPE-005 | BS4比較デモ | 同じHTML対してBS4とScraplingの結果を並べて比較 |
 | F-SCRAPE-006 | find_similar デモ | 1要素から類似要素を自動発見する実演 |
 | F-DASH-004 | Adaptive比較ビュー | v1→v2での「BS4: 0件 vs Scrapling: 復元」を可視化 |
-| F-DASH-005 | スクレイピング実行ボタン | ダッシュボードからワンクリックでスクレイピング実行 |
+| F-DASH-005 | スクレイピング実行ボタン | ダッシュボードから基本/Adaptive/ビジュアルの3種を実行 |
+| F-DASH-006 | リアルタイム進捗表示 | スクレイピング実行中のプログレスバー・ステータス・ストリーミング出力 |
 
 ### Won't（今回やらない）
 
@@ -64,8 +66,7 @@
 - 外部サイト対応
 - ユーザー認証
 - デプロイ・Docker化
-- DB（SQLite / PostgreSQL）
-- StealthyFetcher / DynamicFetcher（ブラウザ必要）
+- DB（SQLite / PostgreSQL）※ Adaptive指紋保存用のSQLiteは使用
 - Spider フレームワーク
 
 ## 非機能要件

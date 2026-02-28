@@ -13,11 +13,13 @@
 | F-SCRAPE-004 | 結果ファイル保存 | `scraper/basic.py` | F-SCRAPE-001 | - |
 | F-SCRAPE-005 | BS4比較デモ | `scraper/comparison.py` | F-SITE-001 | ✅ |
 | F-SCRAPE-006 | find_similar デモ | `scraper/similarity.py` | F-SITE-001 | ✅ |
+| F-SCRAPE-007 | ビジュアルスクレイピング | `scraper/visual.py` | F-SITE-001 | ✅ |
 | F-DASH-001 | 商品一覧テーブル | `dashboard/app.py` | F-SCRAPE-004 | ✅ |
 | F-DASH-002 | 価格グラフ | `dashboard/app.py` | F-SCRAPE-004 | - |
 | F-DASH-003 | CSV DL（ダッシュボード側） | `dashboard/app.py` | F-DASH-001 | - |
 | F-DASH-004 | Adaptive比較ビュー | `dashboard/app.py` | F-SCRAPE-003 | ❌ |
 | F-DASH-005 | スクレイピング実行ボタン | `dashboard/app.py` | F-SCRAPE-001 | - |
+| F-DASH-006 | リアルタイム進捗表示 | `dashboard/app.py` | F-DASH-005 | - |
 
 ## 実装依存グラフ
 
@@ -31,11 +33,13 @@ graph LR
     SCRAPE001 --> SCRAPE004[F-SCRAPE-004<br>ファイル保存]
     SITE001 --> SCRAPE005[F-SCRAPE-005<br>BS4比較]
     SITE001 --> SCRAPE006[F-SCRAPE-006<br>find_similar]
+    SITE001 --> SCRAPE007[F-SCRAPE-007<br>ビジュアル]
     SCRAPE004 --> DASH001[F-DASH-001<br>テーブル表示]
     DASH001 --> DASH002[F-DASH-002<br>価格グラフ]
     DASH001 --> DASH003[F-DASH-003<br>CSV DL]
     SCRAPE003 --> DASH004[F-DASH-004<br>Adaptive比較]
     SCRAPE001 --> DASH005[F-DASH-005<br>実行ボタン]
+    DASH005 --> DASH006[F-DASH-006<br>リアルタイム進捗]
 ```
 
 ## 実装グループ（順序）
@@ -43,9 +47,9 @@ graph LR
 | Phase | グループ | 機能ID | 所要時間目安 |
 |-------|---------|--------|:----------:|
 | 1 | ダミーサイト | F-SITE-001, 002, 003 | 30分 |
-| 2 | スクレイパー基本 | F-SCRAPE-001, 004, 005, 006 | 45分 |
+| 2 | スクレイパー基本 | F-SCRAPE-001, 004, 005, 006, 007 | 60分 |
 | 3 | Adaptive | F-SCRAPE-002, 003 | 30分 |
-| 4 | ダッシュボード | F-DASH-001〜005 | 60分 |
+| 4 | ダッシュボード | F-DASH-001〜006 | 90分 |
 
 ## 受け入れ基準
 

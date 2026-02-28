@@ -26,10 +26,11 @@ scrapling-price-tracker/
 │       └── products.json      # 商品マスタ（6商品）
 ├── scraper/
 │   ├── __init__.py
-│   ├── basic.py               # 基本スクレイピング
-│   ├── adaptive.py            # Adaptive保存/復元
+│   ├── basic.py               # 基本スクレイピング（--realtime対応）
+│   ├── adaptive.py            # Adaptive保存/復元（--realtime対応）
 │   ├── comparison.py          # BS4 vs Scrapling比較
-│   └── similarity.py          # find_similar デモ
+│   ├── similarity.py          # find_similar デモ
+│   └── visual.py              # Playwrightビジュアルスクレイピング（--realtime対応）
 ├── dashboard/
 │   └── app.py                 # Streamlit ダッシュボード
 ├── data/                      # スクレイピング結果出力先（.gitkeep）
@@ -38,12 +39,13 @@ scrapling-price-tracker/
 └── run.sh                     # 一括起動スクリプト
 
 ■ requirements.txt:
-scrapling>=0.4
+scrapling[all]>=0.4
 flask>=3.0
 beautifulsoup4>=4.12
 streamlit>=1.40
 pandas>=2.2
 plotly>=5.24
+playwright>=1.49
 
 ■ 手順:
 1. ディレクトリ構成を作成
@@ -156,6 +158,7 @@ docs/ の設計ドキュメントを参照して、スクレイパーモジュ�
 - scraper/adaptive.py
 - scraper/comparison.py
 - scraper/similarity.py
+- scraper/visual.py
 
 ■ 設計書参照:
 - docs/03_technical_design.md の「スクレイパー設計」セクション
@@ -170,6 +173,7 @@ docs/ の設計ドキュメントを参照して、スクレイパーモジュ�
 - 結果を data/products_{version}.json に保存
 - サイトの /version エンドポイントからバージョンを判定
 - `python -m scraper.basic` で単体実行可能（if __name__ == "__main__"）
+- `python -m scraper.basic --realtime` でリアルタイムタグ出力モード対応
 - 実行時に取得件数と保存先をprint
 
 ■ scraper/adaptive.py の要件:
@@ -203,6 +207,17 @@ docs/ の設計ドキュメントを参照して、スクレイパーモジュ�
 - テキスト検索で特定商品を発見
 - セレクタ自動生成の結果を表示
 - `python -m scraper.similarity` で単体実行可能
+
+■ scraper/visual.py の要件:
+- Playwright（Chromium）でブラウザを表示しながらスクレイピング過程を可視化
+- ブラウザ設定: 1280x800, ja-JP, headless=False, slow_mo=100ms
+- JSによるハイライト機能: カード赤枠、フィールド青枠、ツールチップ、上部バナー
+- v1/v2自動判定（Locatorで毎回クエリ）
+- 各カードを順番にハイライト → フィールド順に抽出 → データ構築
+- CSVダウンロード検出・実行（可能な場合）
+- 結果を data/products_visual.json に保存、CSVは data/products_download.csv に保存
+- `python -m scraper.visual` で標準実行
+- `python -m scraper.visual --realtime` でリアルタイムタグ出力モード対応
 
 ■ 共通ルール:
 - Fetcher.get() でHTTP取得
@@ -259,14 +274,25 @@ docs/ の設計ドキュメントを参照して、Streamlitダッシュボー�
   - 各セレクタの復元詳細（元のセレクタ → 復元先のタグ+class）をst.jsonまたはexpander
   - Phase1/Phase2 の実行ボタン（subprocess.run で scraper/adaptive.py を呼ぶ）
 
+■ 🔄 Adaptive比較ページ（追加仕様）:
+- 3つのデモ再実行ボタンを3列で配置:
+  📌 Phase1: v1で保存 / 🔄 Phase2: v2で復元 / ⚡ フルデモ再実行
+- 各ボタンで subprocess.run() で scraper/adaptive.py を呼び出し
+- 実行結果をコード表示
+
 ■ ⚡ スクレイピング実行ページ:
 - URL入力フィールド（デフォルト: http://localhost:5001）
-- 「🕷️ スクレイピング実行」ボタン
-- 押すと subprocess.run で scraper/basic.py を実行
-- 実行結果をst.success/st.errorで表示
-- 成功時は取得データのプレビュー（st.dataframe で先頭5件）
-- 「Adaptive フルデモ実行」ボタンも配置
-  → subprocess.run で scraper/adaptive.py full を実行
+- 3つの実行ボタンを等幅で配置:
+  🕷️ 基本スクレイピング / 🔄 Adaptive フルデモ / 👁️ ビジュアル実行
+- subprocess.Popen() で --realtime モードのスクレイパーを起動
+- stdout.readline() ループでタグ付き出力をリアルタイムに読み取り:
+  [STEP] → ステータス更新、[PRODUCT] → DataFrame追加、
+  [PROGRESS] → プログレスバー更新、[DONE] → 完了表示
+- st.progress() でプログレスバー表示
+- st.status() でステータスボックス（展開可能）
+- st.empty() でテーブルコンテナ（リアルタイム更新）
+- ビジュアル実行時はブラウザウィンドウが開くことの警告表示
+- 完了後に取得件数・平均価格のメトリクス表示
 
 ■ 共通:
 - エラーハンドリング: try/except で囲み、st.error で表示
@@ -293,12 +319,14 @@ streamlit run dashboard/app.py で起動し、
 ■ テスト手順:
 1. python demo_site/app.py でFlask起動確認
 2. python -m scraper.basic で基本スクレイピング → data/products_v1.json 生成確認
-3. python -m scraper.adaptive full でAdaptiveフルデモ → data/adaptive_result.json 生成確認
-4. python -m scraper.comparison でBS4比較デモ → print出力確認
-5. python -m scraper.similarity でfind_similar等のデモ → print出力確認
-6. streamlit run dashboard/app.py でダッシュボード起動
-7. ダッシュボードの全ページが正常表示されること
-8. CSV DLが動作すること
+3. python -m scraper.basic --realtime でリアルタイム出力確認
+4. python -m scraper.adaptive full でAdaptiveフルデモ → data/adaptive_result.json 生成確認
+5. python -m scraper.comparison でBS4比較デモ → print出力確認
+6. python -m scraper.similarity でfind_similar等のデモ → print出力確認
+7. python -m scraper.visual でビジュアルスクレイピング → data/products_visual.json 生成確認
+8. streamlit run dashboard/app.py でダッシュボード起動
+9. ダッシュボードの全ページが正常表示されること（リアルタイム進捗含む）
+10. CSV DLが動作すること
 
 ■ 仕上げ:
 - README.md を最終版に更新（スクリーンショットの撮り方メモ含む）
@@ -308,7 +336,7 @@ streamlit run dashboard/app.py で起動し、
 - requirements.txt のバージョンを実際にインストールされたものに更新
 
 ■ 完了条件:
-上記テスト手順の1〜8が全てエラーなく完了すること。
+上記テスト手順の1〜10が全てエラーなく完了すること。
 ```
 
 ---

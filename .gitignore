@@ -16,6 +16,9 @@ data/*.db
 .env.local
 .env.production
 
+# Qiita article drafts
+qiita/
+
 # Legacy (template remnants)
 node_modules/
 dist/
