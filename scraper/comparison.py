@@ -52,7 +52,7 @@ def main():
         version_resp = requests.get(f"{BASE_URL}/version")
         version = version_resp.json()["version"]
     except requests.ConnectionError:
-        print("エラー: Flaskサーバーが起動していません。先に python demo_site/app.py を実行してください。")
+        print("エラー: Flaskサーバーが起動していません。先に python3 demo_site/app.py を実行してください。")
         sys.exit(1)
 
     print(f"サイトバージョン: {version}")
