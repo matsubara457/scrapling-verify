@@ -16,7 +16,7 @@ def demo_find_similar(url: str = BASE_URL):
     page = Fetcher.get(url)
 
     # v1/v2 どちらでも対応
-    first_card = page.css_first(".product-card") or page.css_first(".item-tile")
+    first_card = page.css(".product-card").first or page.css(".item-tile").first
     if not first_card:
         print("商品カードが見つかりませんでした")
         return []
@@ -29,8 +29,7 @@ def demo_find_similar(url: str = BASE_URL):
     print(f"find_similar() で発見: {len(similar)}件")
 
     for i, el in enumerate(similar, 1):
-        # 商品名を探す
-        name_el = el.css_first("h2, h3")
+        name_el = el.css("h2, h3").first
         name = name_el.text.strip() if name_el else "(名前不明)"
         print(f"  {i}. {name}")
 
@@ -45,7 +44,10 @@ def demo_find_by_text(url: str = BASE_URL):
 
     print(f"\nテキスト検索デモ:")
     for term in search_terms:
-        results = page.find_by_text(term)
+        # partial=True で部分一致、first_match=False で全件取得
+        results = page.find_by_text(term, first_match=False, partial=True)
+        if results is None:
+            results = []
         print(f"  「{term}」→ {len(results)}件ヒット")
         for el in results[:3]:
             print(f"    <{el.tag} class=\"{el.attrib.get('class', '')}\"> {el.text.strip()[:50]}")
@@ -56,7 +58,7 @@ def demo_css_selector_generation(url: str = BASE_URL):
     page = Fetcher.get(url)
 
     # 最初の商品名要素を取得
-    name_el = page.css_first(".product-name") or page.css_first(".title")
+    name_el = page.css(".product-name").first or page.css(".title").first
     if not name_el:
         print("\n商品名要素が見つかりませんでした")
         return
@@ -64,8 +66,13 @@ def demo_css_selector_generation(url: str = BASE_URL):
     print(f"\nCSS セレクタ自動生成デモ:")
     print(f"  対象要素: <{name_el.tag} class=\"{name_el.attrib.get('class', '')}\"> 「{name_el.text.strip()}」")
 
+    # generate_css_selector はプロパティ
     generated = name_el.generate_css_selector
     print(f"  生成されたセレクタ: {generated}")
+
+    # フルパスセレクタも生成
+    full_generated = name_el.generate_full_css_selector
+    print(f"  フルパスセレクタ: {full_generated}")
 
 
 def main():

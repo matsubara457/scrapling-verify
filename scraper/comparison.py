@@ -62,13 +62,12 @@ def main():
     results = compare()
 
     # 表形式で出力
-    header = f"{'セレクタ':<22} {'BS4':>6} {'Scrapling':>10} {'一致':>6}"
-    print(header)
-    print("-" * len(header))
+    print(f"{'セレクタ':<20} {'BS4':>6} {'Scrapling':>10} {'一致':>6}")
+    print("-" * 46)
 
     for css, counts in results.items():
         match = "✅" if counts["bs4"] == counts["scrapling"] else "⚠️"
-        print(f"{css:<22} {counts['bs4']:>6} {counts['scrapling']:>10} {match:>6}")
+        print(f"{css:<20} {counts['bs4']:>6} {counts['scrapling']:>10} {match:>6}")
 
     # サマリ
     total_bs4 = sum(c["bs4"] for c in results.values())

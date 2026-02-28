@@ -6,6 +6,7 @@ __pycache__/
 # Data output
 data/*.json
 data/*.csv
+data/*.db
 
 # OS
 .DS_Store

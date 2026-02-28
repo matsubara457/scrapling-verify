@@ -1,4 +1,4 @@
-scrapling>=0.4
+scrapling[all]>=0.4
 flask>=3.0
 beautifulsoup4>=4.12
 streamlit>=1.40
