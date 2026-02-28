@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "name": "ワイヤレスイヤホン Pro",
+    "price": 12800,
+    "category": "オーディオ",
+    "rating": 4.5,
+    "reviews": 128,
+    "description": "ノイズキャンセリング搭載の高音質ワイヤレスイヤホン。最大30時間再生。"
+  },
+  {
+    "id": 2,
+    "name": "スマートウォッチ X1",
+    "price": 29800,
+    "category": "ウェアラブル",
+    "rating": 4.2,
+    "reviews": 89,
+    "description": "心拍・睡眠・GPS搭載。5日間バッテリー持続のスマートウォッチ。"
+  },
+  {
+    "id": 3,
+    "name": "USB-C ハブ 7in1",
+    "price": 4980,
+    "category": "アクセサリ",
+    "rating": 4.7,
+    "reviews": 256,
+    "description": "HDMI・USB3.0×2・SD・microSD・PD充電対応の万能ハブ。"
+  },
+  {
+    "id": 4,
+    "name": "メカニカルキーボード K1",
+    "price": 15800,
+    "category": "入力デバイス",
+    "rating": 4.8,
+    "reviews": 312,
+    "description": "Cherry MX互換スイッチ搭載。RGBバックライト・ホットスワップ対応。"
+  },
+  {
+    "id": 5,
+    "name": "ポータブルSSD 1TB",
+    "price": 9800,
+    "category": "ストレージ",
+    "rating": 4.6,
+    "reviews": 178,
+    "description": "USB 3.2 Gen2対応。最大1050MB/sの超高速転送。耐衝撃設計。"
+  },
+  {
+    "id": 6,
+    "name": "4Kウェブカメラ",
+    "price": 8900,
+    "category": "カメラ",
+    "rating": 4.3,
+    "reviews": 67,
+    "description": "4K/30fps対応。オートフォーカス・ノイズキャンセルマイク内蔵。"
+  }
+]
