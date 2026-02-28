@@ -264,11 +264,63 @@ def run_visual(url: str = BASE_URL, realtime: bool = False) -> list[dict]:
 
         emit("progress", f"{total}/{total}")
 
-        # 完了バナー
+        # 商品スクレイピング完了バナー
         _safe_eval(page, JS_SHOW_BANNER, f"✅ {len(products)}件のスクレイピング完了！")
-        time.sleep(1.5)
+        time.sleep(1.0)
 
-        # 保存
+        # --- CSVダウンロードボタン押下 ---
+        csv_btn = page.locator("a.csv-download-btn, a[href='/csv']").first
+        try:
+            csv_visible = csv_btn.is_visible()
+        except PlaywrightError:
+            csv_visible = False
+
+        csv_path = None
+        if csv_visible:
+            emit("step", "CSVダウンロードボタンを検出...")
+            _safe_eval(page, JS_SHOW_BANNER, "📥 CSVダウンロードボタンをクリック")
+
+            # ボタンをハイライト
+            _safe_eval(csv_btn, JS_HIGHLIGHT)
+            time.sleep(0.8)
+
+            # ツールチップ表示
+            try:
+                box = csv_btn.bounding_box()
+            except PlaywrightError:
+                box = None
+            if box:
+                _safe_eval(
+                    page, JS_SHOW_TOOLTIP,
+                    [box["x"] + box["width"] + 10, box["y"], "🔍 CSVダウンロード: クリックしてデータ取得"],
+                )
+            time.sleep(0.6)
+
+            # ダウンロードイベントを待ちつつクリック
+            emit("step", "CSVダウンロード実行中...")
+            try:
+                with page.expect_download(timeout=10000) as download_info:
+                    csv_btn.click()
+                download = download_info.value
+
+                # ダウンロードしたCSVを data/ に保存
+                csv_path = os.path.join(DATA_DIR, "products_download.csv")
+                download.save_as(csv_path)
+                emit("info", f"CSV保存: {csv_path}")
+
+                _safe_eval(page, JS_SHOW_BANNER, f"📥 CSV ダウンロード完了！ ({download.suggested_filename})")
+            except PlaywrightError:
+                emit("warn", "CSVダウンロードに失敗しました")
+                _safe_eval(page, JS_SHOW_BANNER, "⚠️ CSVダウンロード失敗")
+
+            # ハイライト解除
+            _safe_eval(csv_btn, JS_CLEAR_HIGHLIGHT)
+            _safe_eval(page, JS_HIDE_TOOLTIP)
+            time.sleep(1.0)
+        else:
+            emit("info", "CSVダウンロードボタンなし — スキップ")
+
+        # JSON保存
         emit("step", "データ保存中...")
         filepath = os.path.join(DATA_DIR, "products_visual.json")
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -276,7 +328,10 @@ def run_visual(url: str = BASE_URL, realtime: bool = False) -> list[dict]:
             json.dump(products, f, ensure_ascii=False, indent=2)
         emit("info", f"保存先: {filepath}")
 
-        emit("done", f"{len(products)}件取得完了（ビジュアルモード）")
+        summary = f"{len(products)}件取得完了（ビジュアルモード）"
+        if csv_path:
+            summary += " + CSV取得済み"
+        emit("done", summary)
 
         # ブラウザを少し見せてから閉じる
         _safe_eval(page, JS_SHOW_BANNER, "🎉 完了！ブラウザを閉じます...")
