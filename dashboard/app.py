@@ -255,44 +255,114 @@ elif page == "🔄 Adaptive比較":
 # ===== ⚡ スクレイピング実行ページ =====
 elif page == "⚡ スクレイピング実行":
     st.title("⚡ スクレイピング実行")
+    st.markdown("スクレイパーの処理過程をリアルタイムで可視化します。")
 
     url = st.text_input("対象URL", value="http://localhost:5001")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("🕷️ スクレイピング実行"):
-            with st.spinner("スクレイピング中..."):
-                result = subprocess.run(
-                    [sys.executable, "-m", "scraper.basic"],
-                    capture_output=True, text=True, cwd=PROJECT_ROOT,
-                )
-                if result.returncode == 0:
-                    st.success("スクレイピング完了！")
-                    st.code(result.stdout)
-
-                    # プレビュー表示
-                    json_files = sorted(glob.glob(os.path.join(DATA_DIR, "products_*.json")))
-                    if json_files:
-                        latest = json_files[-1]
-                        with open(latest, "r", encoding="utf-8") as f:
-                            preview_data = json.load(f)
-                        st.subheader("取得データプレビュー")
-                        st.dataframe(pd.DataFrame(preview_data).head(5))
-                else:
-                    st.error("スクレイピングエラー")
-                    st.code(result.stderr)
-
+        basic_clicked = st.button("🕷️ 基本スクレイピング", use_container_width=True)
     with col2:
-        if st.button("🔄 Adaptive フルデモ実行"):
-            with st.spinner("Adaptive フルデモ実行中..."):
-                result = subprocess.run(
-                    [sys.executable, "-m", "scraper.adaptive", "full"],
-                    capture_output=True, text=True, cwd=PROJECT_ROOT,
+        adaptive_clicked = st.button("🔄 Adaptive フルデモ", use_container_width=True)
+
+    if basic_clicked or adaptive_clicked:
+        if basic_clicked:
+            cmd = [sys.executable, "-m", "scraper.basic", "--realtime"]
+            scraper_label = "基本スクレイピング"
+        else:
+            cmd = [sys.executable, "-m", "scraper.adaptive", "full", "--realtime"]
+            scraper_label = "Adaptive フルデモ"
+
+        # UI コンテナを配置
+        progress_bar = st.progress(0, text="準備中...")
+        status = st.status(f"🔴 {scraper_label} 実行中...", expanded=True)
+        table_container = st.empty()
+
+        # subprocess.Popen でリアルタイム読み取り
+        env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, cwd=PROJECT_ROOT, env=env,
+        )
+
+        products = []
+        done = False
+
+        for line in iter(proc.stdout.readline, ""):
+            line = line.rstrip()
+            if not line:
+                continue
+
+            if line.startswith("[STEP]"):
+                step_text = line.replace("[STEP] ", "")
+                status.write(f"⏳ {step_text}")
+            elif line.startswith("[PHASE]"):
+                phase_text = line.replace("[PHASE] ", "")
+                status.write(f"🔄 **{phase_text}**")
+            elif line.startswith("[INFO]"):
+                info_text = line.replace("[INFO] ", "")
+                status.write(f"ℹ️ {info_text}")
+            elif line.startswith("[PRODUCT]"):
+                json_str = line.replace("[PRODUCT] ", "")
+                product = json.loads(json_str)
+                products.append(product)
+                table_container.dataframe(
+                    pd.DataFrame(products), use_container_width=True,
                 )
-                if result.returncode == 0:
-                    st.success("Adaptive フルデモ完了！")
-                    st.code(result.stdout)
-                else:
-                    st.error("Adaptive デモエラー")
-                    st.code(result.stderr)
+            elif line.startswith("[SAVE]"):
+                save_text = line.replace("[SAVE] ", "")
+                status.write(f"💾 保存: {save_text}")
+            elif line.startswith("[BS4]"):
+                bs4_text = line.replace("[BS4] ", "")
+                status.write(f"🔍 BS4: {bs4_text}")
+            elif line.startswith("[RESTORE]"):
+                restore_text = line.replace("[RESTORE] ", "")
+                status.write(f"✨ 復元: {restore_text}")
+            elif line.startswith("[MISS]"):
+                miss_text = line.replace("[MISS] ", "")
+                status.write(f"⚠️ {miss_text}")
+            elif line.startswith("[PROGRESS]"):
+                parts = line.replace("[PROGRESS] ", "").split("/")
+                current, total = int(parts[0]), int(parts[1])
+                pct = current / total
+                progress_bar.progress(pct, text=f"進捗: {current}/{total}")
+            elif line.startswith("[SUMMARY]"):
+                summary_text = line.replace("[SUMMARY] ", "")
+                status.write(f"📊 **{summary_text}**")
+            elif line.startswith("[DONE]"):
+                done_text = line.replace("[DONE] ", "")
+                progress_bar.progress(1.0, text="完了!")
+                status.update(label=f"✅ {done_text}", state="complete")
+                done = True
+            elif line.startswith("[WARN]"):
+                warn_text = line.replace("[WARN] ", "")
+                status.write(f"⚠️ {warn_text}")
+            elif line.startswith("[ERROR]"):
+                error_text = line.replace("[ERROR] ", "")
+                status.update(label=f"❌ {error_text}", state="error")
+
+        proc.wait()
+
+        if proc.returncode != 0 and not done:
+            error_output = proc.stderr.read()
+            if error_output:
+                status.update(label="❌ 実行エラー", state="error")
+                st.error("スクレイパーでエラーが発生しました")
+                st.code(error_output)
+
+        # 完了後のデータプレビュー（基本スクレイピングの場合）
+        if done and basic_clicked:
+            json_files = sorted(glob.glob(os.path.join(DATA_DIR, "products_*.json")))
+            if json_files:
+                latest = json_files[-1]
+                with open(latest, "r", encoding="utf-8") as f:
+                    preview_data = json.load(f)
+                st.subheader("📊 取得データサマリ")
+                df = pd.DataFrame(preview_data)
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.metric("取得件数", f"{len(df)}件")
+                with col_b:
+                    if "price" in df.columns:
+                        st.metric("平均価格", f"¥{df['price'].mean():,.0f}")
