@@ -13,6 +13,7 @@ Scrapling Price Tracker — ローカルのダミーECサイトをScraplingで�
 ## 技術スタック
 - Python 3.10+
 - スクレイピング: Scrapling 0.4+（パーサー + Fetcher + Adaptive）
+- ビジュアルスクレイピング: Playwright 1.49+（Chromium）
 - 比較用: BeautifulSoup4
 - ダミーサイト: Flask 3.0+
 - ダッシュボード: Streamlit 1.40+
@@ -22,7 +23,7 @@ Scrapling Price Tracker — ローカルのダミーECサイトをScraplingで�
 ## アーキテクチャ
 - 3コンポーネント構成: demo_site（Flask） → scraper（Scrapling） → dashboard（Streamlit）
 - demo_site: ダミーECサイト。v1/v2のUI切替でHTML構造を大幅変更
-- scraper: 4モジュール（basic/adaptive/comparison/similarity）
+- scraper: 5モジュール（basic/adaptive/comparison/similarity/visual）
 - dashboard: Streamlit 4ページ（概要/商品データ/Adaptive比較/実行）
 - data/: スクレイピング結果のJSON出力先
 
@@ -63,9 +64,13 @@ plotly express でグラフ描画
 - `pip install -r requirements.txt` — 依存パッケージインストール
 - `python demo_site/app.py` — Flask ダミーサイト起動 (port 5001)
 - `python -m scraper.basic` — 基本スクレイピング実行
+- `python -m scraper.basic --realtime` — リアルタイム出力モード（ダッシュボード連携用）
 - `python -m scraper.adaptive full` — Adaptiveフルデモ
+- `python -m scraper.adaptive full --realtime` — Adaptiveリアルタイム出力
 - `python -m scraper.comparison` — BS4 vs Scrapling 比較
 - `python -m scraper.similarity` — find_similar デモ
+- `python -m scraper.visual` — Playwrightビジュアルスクレイピング
+- `python -m scraper.visual --realtime` — ビジュアルリアルタイム出力
 - `streamlit run dashboard/app.py --server.port 8501` — ダッシュボード起動
 - `./run.sh` — Flask + Streamlit 一括起動
 
