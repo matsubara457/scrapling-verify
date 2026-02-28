@@ -135,6 +135,7 @@ Worktree: <パス>（確認後 `git worktree remove <path>` で削除）
 
 ### Phase 11: 進化チェックポイント（必ず実行 — スキップ厳禁）
 **Phase 10 の直後に即実行。条件分岐なし。**
+**単独呼び出し** (`/solve 11`) にも対応: Phase 1-10 をスキップし、直近セッションの累積学習をまとめて実行する。
 1. **skills-learn**: SKILL.mdと実際の作業手順を比較。乖離あれば即修正。結果を auto-memory `skill-patterns.md` に記録
 2. **skills-suggest**: 3回以上繰り返した手動作業パターンを `skill-patterns.md` に記録。Skill化候補があれば提案
 3. **skills-watch**: 新ファイル作成・パス変更があれば関連Skillの参照パスを更新
