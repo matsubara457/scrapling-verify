@@ -9,7 +9,7 @@ import io
 import json
 import os
 
-from flask import Flask, Response, jsonify, redirect, render_template, session
+from flask import Flask, Response, jsonify, redirect, render_template, request, session
 
 app = Flask(__name__)
 app.secret_key = "scrapling-demo-secret-key"
@@ -24,7 +24,12 @@ def load_products() -> list[dict]:
 
 @app.route("/")
 def index():
-    version = session.get("version", "v1")
+    # クエリパラメータ ?v=v1 or ?v=v2 でバージョン指定（スクレイパーから使用）
+    v = request.args.get("v")
+    if v in ("v1", "v2"):
+        version = v
+    else:
+        version = session.get("version", "v1")
     products = load_products()
     return render_template(f"{version}.html", products=products)
 
@@ -57,6 +62,10 @@ def api_products():
 
 @app.route("/version")
 def version():
+    # クエリパラメータ ?v= があればそれを返す（スクレイパーから使用）
+    v = request.args.get("v")
+    if v in ("v1", "v2"):
+        return jsonify({"version": v})
     return jsonify({"version": session.get("version", "v1")})
 
 

@@ -11,11 +11,13 @@ import sys
 
 import requests
 from bs4 import BeautifulSoup
+from scrapling.core.storage import SQLiteStorageSystem
 from scrapling.fetchers import Fetcher
 from scrapling.parser import Selector
 
 BASE_URL = "http://localhost:5001"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+STORAGE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "elements_storage.db")
 
 SELECTORS = [
     (".product-name", "商品名"),
@@ -26,28 +28,30 @@ SELECTORS = [
 ]
 
 
-def get_version(url: str = BASE_URL) -> str:
-    resp = requests.get(f"{url}/version")
-    return resp.json()["version"]
-
-
-def switch_version(url: str = BASE_URL) -> str:
-    """サイトのバージョンを切り替える（セッション維持のため同じセッションを使用）"""
-    session = requests.Session()
-    session.get(f"{url}/switch")
-    resp = session.get(f"{url}/version")
-    return resp.json()["version"]
+def clear_storage():
+    """Adaptive ストレージをクリアする"""
+    if os.path.exists(STORAGE_FILE):
+        os.remove(STORAGE_FILE)
+        print("ストレージをクリアしました")
 
 
 def phase1_save(url: str = BASE_URL) -> dict:
     """v1のHTMLで要素の指紋を保存する"""
-    page = Fetcher.get(url)
+    v1_url = f"{url}?v=v1"
+    page = Fetcher.get(v1_url)
     html = page.html_content
-    selector = Selector(html, url=url, auto_save=True)
+
+    selector = Selector(
+        html,
+        url=url,
+        adaptive=True,
+        storage=SQLiteStorageSystem,
+        storage_args={"storage_file": STORAGE_FILE, "url": url},
+    )
 
     results = {}
     for css, label in SELECTORS:
-        found = selector.css(css)
+        found = selector.css(css, auto_save=True)
         if found:
             results[label] = found[0].text.strip()
             print(f"  保存: {label} ({css}) → 「{results[label]}」")
@@ -60,18 +64,27 @@ def phase1_save(url: str = BASE_URL) -> dict:
 
 def phase2_restore(url: str = BASE_URL) -> dict:
     """v2のHTMLでadaptive復元を試みる（BS4との比較あり）"""
-    page = Fetcher.get(url)
+    v2_url = f"{url}?v=v2"
+    page = Fetcher.get(v2_url)
     html = page.html_content
 
     # BS4でv1セレクタを試行
+    print("[BS4でv1セレクタを試行]")
     bs4_results = _bs4_check(html)
 
     # Scrapling Adaptiveで復元
-    selector = Selector(html, url=url, auto_save=True)
-    scrapling_results = {}
+    print("\n[Scrapling Adaptiveで復元]")
+    selector = Selector(
+        html,
+        url=url,
+        adaptive=True,
+        storage=SQLiteStorageSystem,
+        storage_args={"storage_file": STORAGE_FILE, "url": url},
+    )
 
+    scrapling_results = {}
     for css, label in SELECTORS:
-        found = selector.css(css)
+        found = selector.css(css, adaptive=True)
         if found:
             el = found[0]
             scrapling_results[label] = {
@@ -106,32 +119,21 @@ def _bs4_check(html: str) -> dict:
 
 
 def run_full_demo(url: str = BASE_URL) -> dict:
-    """フルデモ: v1保存 → v2切替 → 復元 → 比較"""
+    """フルデモ: ストレージクリア → v1保存 → v2復元 → 比較"""
     print("=" * 50)
     print("Adaptive Scraping フルデモ")
     print("=" * 50)
 
-    # セッションを使ってv1を確認
-    session = requests.Session()
-    resp = session.get(f"{url}/version")
-    current = resp.json()["version"]
-
-    # v1でなければ切り替え
-    if current != "v1":
-        print(f"\n現在 {current} → v1 に切替中...")
-        session.get(f"{url}/switch")
+    # ストレージクリア
+    print("\n--- ストレージクリア ---")
+    clear_storage()
 
     # Phase1: v1で保存
     print(f"\n--- Phase 1: v1で指紋保存 ---")
     v1_results = phase1_save(url)
 
-    # v2に切替
-    print(f"\nv2に切替中...")
-    session.get(f"{url}/switch")
-
     # Phase2: v2で復元
     print(f"\n--- Phase 2: v2でAdaptive復元 ---")
-    print(f"\n[BS4でv1セレクタを試行]")
     v2_results = phase2_restore(url)
 
     # 結果をまとめて保存
@@ -149,15 +151,15 @@ def run_full_demo(url: str = BASE_URL) -> dict:
 
     # サマリ
     bs4_found = sum(1 for v in v2_results["bs4"].values() if v > 0)
-    scrapling_found = sum(1 for v in v2_results["scrapling"].values() if isinstance(v, dict) and v.get("status") == "restored")
+    scrapling_found = sum(
+        1 for v in v2_results["scrapling"].values()
+        if isinstance(v, dict) and v.get("status") == "restored"
+    )
     print(f"\n{'=' * 50}")
     print(f"結果サマリ:")
     print(f"  BS4 (v1セレクタ → v2):       {bs4_found}/{len(SELECTORS)} 件検出")
     print(f"  Scrapling Adaptive (復元):    {scrapling_found}/{len(SELECTORS)} 件復元")
     print(f"{'=' * 50}")
-
-    # v1に戻す
-    session.get(f"{url}/switch")
 
     return result
 
@@ -167,7 +169,7 @@ def main():
         print("使い方: python -m scraper.adaptive [phase1|phase2|full]")
         print("  phase1 - v1のHTMLで指紋を保存")
         print("  phase2 - v2のHTMLでAdaptive復元")
-        print("  full   - フルデモ（v1保存 → v2復元 → 比較）")
+        print("  full   - フルデモ（ストレージクリア → v1保存 → v2復元 → 比較）")
         sys.exit(1)
 
     command = sys.argv[1]

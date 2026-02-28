@@ -6,6 +6,7 @@ v1/v2どちらの構造でも対応するフォールバック機構を持つ。
 
 import json
 import os
+import re
 import sys
 
 import requests
@@ -43,11 +44,12 @@ def _parse_v1(cards) -> list[dict]:
     products = []
     for card in cards:
         products.append({
-            "name": (card.css_first("h2.product-name") or _empty()).text.strip(),
-            "price": _parse_price((card.css_first("span.product-price") or _empty()).text),
-            "category": (card.css_first("span.product-category") or _empty()).text.strip(),
-            "rating": (card.css_first("div.product-rating") or _empty()).text.strip(),
-            "description": (card.css_first("p.product-desc") or _empty()).text.strip(),
+            "name": _safe_text(card.css("h2.product-name").first),
+            "price": _parse_price(_safe_text(card.css("span.product-price").first)),
+            "category": _safe_text(card.css("span.product-category").first),
+            "rating": _parse_rating(_safe_text(card.css("div.product-rating").first)),
+            "reviews": _parse_reviews(_safe_text(card.css("div.product-reviews").first)),
+            "description": _safe_text(card.css("p.product-desc").first),
         })
     return products
 
@@ -57,17 +59,25 @@ def _parse_v2(cards) -> list[dict]:
     products = []
     for card in cards:
         products.append({
-            "name": (card.css_first("h3.title") or _empty()).text.strip(),
-            "price": _parse_price((card.css_first("div.cost") or _empty()).text),
-            "category": (card.css_first("span.tag") or _empty()).text.strip(),
-            "rating": (card.css_first("div.stars") or _empty()).text.strip(),
-            "description": (card.css_first("p.desc") or _empty()).text.strip(),
+            "name": _safe_text(card.css("h3.title").first),
+            "price": _parse_price(_safe_text(card.css("div.cost").first)),
+            "category": _safe_text(card.css("span.tag").first),
+            "rating": _parse_rating(_safe_text(card.css("div.stars").first)),
+            "reviews": _parse_reviews(_safe_text(card.css("span.review-count").first)),
+            "description": _safe_text(card.css("p.desc").first),
         })
     return products
 
 
+def _safe_text(element) -> str:
+    """要素のテキストを安全に取得する"""
+    if element is None:
+        return ""
+    return element.text.strip()
+
+
 def _parse_price(text: str) -> int:
-    """価格テキストから数値を抽出する"""
+    """価格テキスト（例: "¥12,800"）から数値を抽出する"""
     cleaned = text.replace("¥", "").replace(",", "").replace("￥", "").strip()
     try:
         return int(cleaned)
@@ -75,12 +85,20 @@ def _parse_price(text: str) -> int:
         return 0
 
 
-class _EmptyElement:
-    """要素が見つからない場合のダミーオブジェクト"""
-    text = ""
+def _parse_rating(text: str) -> float:
+    """評価テキスト（例: "★ 4.5"）から数値を抽出する"""
+    match = re.search(r"[\d.]+", text)
+    if match:
+        return float(match.group())
+    return 0.0
 
-def _empty():
-    return _EmptyElement()
+
+def _parse_reviews(text: str) -> int:
+    """レビュー数テキスト（例: "128件のレビュー"）から数値を抽出する"""
+    match = re.search(r"\d+", text)
+    if match:
+        return int(match.group())
+    return 0
 
 
 def save_results(products: list[dict], filepath: str) -> None:
