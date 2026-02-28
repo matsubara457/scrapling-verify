@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "🛒 ダミーサイト起動中..."
-python demo_site/app.py &
+python3 demo_site/app.py &
 FLASK_PID=$!
 sleep 2
 echo "📊 ダッシュボード起動中..."

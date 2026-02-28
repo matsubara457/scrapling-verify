@@ -7,6 +7,7 @@ import glob
 import json
 import os
 import subprocess
+import sys
 
 import pandas as pd
 import plotly.express as px
@@ -136,7 +137,7 @@ elif page == "🔄 Adaptive比較":
         if st.button("🔄 Adaptive フルデモ実行"):
             with st.spinner("Adaptive フルデモ実行中..."):
                 result = subprocess.run(
-                    ["python", "-m", "scraper.adaptive", "full"],
+                    [sys.executable, "-m", "scraper.adaptive", "full"],
                     capture_output=True, text=True, cwd=PROJECT_ROOT,
                 )
                 if result.returncode == 0:
@@ -202,6 +203,54 @@ elif page == "🔄 Adaptive比較":
                 with st.expander(f"{label} ({data.get('original_selector', '')})"):
                     st.json(data)
 
+        # 再実行ボタン
+        st.divider()
+        st.subheader("デモ再実行")
+        btn_col1, btn_col2, btn_col3 = st.columns(3)
+
+        with btn_col1:
+            if st.button("📌 Phase1: v1で保存"):
+                with st.spinner("Phase1 実行中..."):
+                    result = subprocess.run(
+                        [sys.executable, "-m", "scraper.adaptive", "phase1"],
+                        capture_output=True, text=True, cwd=PROJECT_ROOT,
+                    )
+                    if result.returncode == 0:
+                        st.success("Phase1 完了！")
+                        st.code(result.stdout)
+                    else:
+                        st.error("Phase1 エラー")
+                        st.code(result.stderr)
+
+        with btn_col2:
+            if st.button("🔄 Phase2: v2で復元"):
+                with st.spinner("Phase2 実行中..."):
+                    result = subprocess.run(
+                        [sys.executable, "-m", "scraper.adaptive", "phase2"],
+                        capture_output=True, text=True, cwd=PROJECT_ROOT,
+                    )
+                    if result.returncode == 0:
+                        st.success("Phase2 完了！")
+                        st.code(result.stdout)
+                    else:
+                        st.error("Phase2 エラー")
+                        st.code(result.stderr)
+
+        with btn_col3:
+            if st.button("⚡ フルデモ再実行"):
+                with st.spinner("Adaptive フルデモ実行中..."):
+                    result = subprocess.run(
+                        [sys.executable, "-m", "scraper.adaptive", "full"],
+                        capture_output=True, text=True, cwd=PROJECT_ROOT,
+                    )
+                    if result.returncode == 0:
+                        st.success("フルデモ完了！")
+                        st.code(result.stdout)
+                        st.rerun()
+                    else:
+                        st.error("フルデモエラー")
+                        st.code(result.stderr)
+
 
 # ===== ⚡ スクレイピング実行ページ =====
 elif page == "⚡ スクレイピング実行":
@@ -215,7 +264,7 @@ elif page == "⚡ スクレイピング実行":
         if st.button("🕷️ スクレイピング実行"):
             with st.spinner("スクレイピング中..."):
                 result = subprocess.run(
-                    ["python", "-m", "scraper.basic"],
+                    [sys.executable, "-m", "scraper.basic"],
                     capture_output=True, text=True, cwd=PROJECT_ROOT,
                 )
                 if result.returncode == 0:
@@ -238,7 +287,7 @@ elif page == "⚡ スクレイピング実行":
         if st.button("🔄 Adaptive フルデモ実行"):
             with st.spinner("Adaptive フルデモ実行中..."):
                 result = subprocess.run(
-                    ["python", "-m", "scraper.adaptive", "full"],
+                    [sys.executable, "-m", "scraper.adaptive", "full"],
                     capture_output=True, text=True, cwd=PROJECT_ROOT,
                 )
                 if result.returncode == 0:
