@@ -26,12 +26,19 @@
         .switch-btn { background: #3498db; color: #fff; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; }
         .switch-btn:hover { background: #2980b9; }
         .version-badge { background: #ecf0f1; color: #7f8c8d; padding: 6px 16px; border-radius: 20px; font-size: 13px; }
+        .toolbar { display: flex; justify-content: flex-end; padding: 16px 40px 0; max-width: 1200px; margin: 0 auto; }
+        .csv-download-btn { display: inline-flex; align-items: center; gap: 6px; background: #27ae60; color: #fff; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; }
+        .csv-download-btn:hover { background: #219a52; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>TechShop</h1>
         <p>最新ガジェットをお手頃価格で</p>
+    </div>
+
+    <div class="toolbar">
+        <a href="/csv" class="csv-download-btn">&#x1F4E5; CSV ダウンロード</a>
     </div>
 
     <div class="product-list">
